@@ -8,9 +8,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/mailgun/timetools"
+	"github.com/mailgun/holster/v4/clock"
 	"github.com/vulcand/oxy/utils"
 )
 
@@ -175,9 +174,7 @@ func Post(url string, opts ...ReqOption) (*http.Response, []byte, error) {
 	return MakeRequest(url, opts...)
 }
 
-// GetClock gets a FreezedTime
-func GetClock() *timetools.FreezedTime {
-	return &timetools.FreezedTime{
-		CurrentTime: time.Date(2012, 3, 4, 5, 6, 7, 0, time.UTC),
-	}
+func FreezeTime() func() {
+	clock.Freeze(clock.Date(2012, 3, 4, 5, 6, 7, 0, clock.UTC))
+	return clock.Unfreeze
 }

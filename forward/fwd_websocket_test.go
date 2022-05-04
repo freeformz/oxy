@@ -9,9 +9,9 @@ import (
 	"net/http/httptest"
 	"runtime"
 	"testing"
-	"time"
 
 	gorillawebsocket "github.com/gorilla/websocket"
+	"github.com/mailgun/holster/v4/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vulcand/oxy/testutils"
@@ -98,7 +98,7 @@ func TestWebsocketConnectionClosedHook(t *testing.T) {
 	conn.Close()
 
 	select {
-	case <-time.After(time.Second):
+	case <-clock.After(clock.Second):
 		t.Errorf("Websocket Hook not called")
 	case <-closed:
 
@@ -110,7 +110,7 @@ func TestWebSocketPingPong(t *testing.T) {
 	require.NoError(t, err)
 
 	var upgrader = gorillawebsocket.Upgrader{
-		HandshakeTimeout: 10 * time.Second,
+		HandshakeTimeout: 10 * clock.Second,
 		CheckOrigin: func(*http.Request) bool {
 			return true
 		},
@@ -159,7 +159,7 @@ func TestWebSocketPingPong(t *testing.T) {
 		return badErr
 	})
 
-	conn.WriteControl(gorillawebsocket.PingMessage, []byte("Ping"), time.Now().Add(time.Second))
+	conn.WriteControl(gorillawebsocket.PingMessage, []byte("Ping"), clock.Now().Add(clock.Second))
 	_, _, err = conn.ReadMessage()
 
 	if err != goodErr {
@@ -317,7 +317,7 @@ func TestWebSocketNumGoRoutine(t *testing.T) {
 
 	conn.Close()
 
-	time.Sleep(time.Second)
+	clock.Sleep(clock.Second)
 	assert.Equal(t, num, runtime.NumGoroutine())
 }
 
@@ -717,7 +717,7 @@ func TestWebSocketTransferTLSConfig(t *testing.T) {
 	assert.Equal(t, "ok", resp)
 }
 
-const dialTimeout = time.Second
+const dialTimeout = clock.Second
 
 type websocketRequestOpt func(w *websocketRequest)
 

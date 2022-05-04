@@ -2,9 +2,9 @@ package memmetrics
 
 import (
 	"testing"
-	"time"
 
 	"github.com/codahale/hdrhistogram"
+	"github.com/mailgun/holster/v4/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vulcand/oxy/testutils"
@@ -40,15 +40,16 @@ func TestMergeNil(t *testing.T) {
 }
 
 func TestRotation(t *testing.T) {
-	clock := testutils.GetClock()
+	done := testutils.FreezeTime()
+	defer done()
 
 	h, err := NewRollingHDRHistogram(
-		1,           // min value
-		3600000,     // max value
-		3,           // significant figures
-		time.Second, // 1 second is a rolling period
-		2,           // 2 histograms in a window
-		RollingClock(clock))
+		1,       // min value
+		3600000, // max value
+		3,       // significant figures
+		clock.Second,
+		2, // 2 histograms in a window
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, h)
@@ -60,7 +61,7 @@ func TestRotation(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, 5, m.ValueAtQuantile(100))
 
-	clock.CurrentTime = clock.CurrentTime.Add(time.Second)
+	clock.Advance(clock.Second)
 	require.NoError(t, h.RecordValues(2, 1))
 	require.NoError(t, h.RecordValues(1, 1))
 
@@ -69,7 +70,7 @@ func TestRotation(t *testing.T) {
 	assert.EqualValues(t, 5, m.ValueAtQuantile(100))
 
 	// rotate, this means that the old value would evaporate
-	clock.CurrentTime = clock.CurrentTime.Add(time.Second)
+	clock.Advance(clock.Second)
 
 	require.NoError(t, h.RecordValues(1, 1))
 
@@ -79,15 +80,16 @@ func TestRotation(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	clock := testutils.GetClock()
+	done := testutils.FreezeTime()
+	defer done()
 
 	h, err := NewRollingHDRHistogram(
-		1,           // min value
-		3600000,     // max value
-		3,           // significant figures
-		time.Second, // 1 second is a rolling period
-		2,           // 2 histograms in a window
-		RollingClock(clock))
+		1,       // min value
+		3600000, // max value
+		3,       // significant figures
+		clock.Second,
+		2, // 2 histograms in a window
+	)
 
 	require.NoError(t, err)
 	require.NotNil(t, h)
@@ -98,7 +100,7 @@ func TestReset(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, 5, m.ValueAtQuantile(100))
 
-	clock.CurrentTime = clock.CurrentTime.Add(time.Second)
+	clock.Advance(clock.Second)
 	require.NoError(t, h.RecordValues(2, 1))
 	require.NoError(t, h.RecordValues(1, 1))
 
@@ -114,7 +116,7 @@ func TestReset(t *testing.T) {
 	require.NoError(t, err)
 	assert.EqualValues(t, 5, m.ValueAtQuantile(100))
 
-	clock.CurrentTime = clock.CurrentTime.Add(time.Second)
+	clock.Advance(clock.Second)
 	require.NoError(t, h.RecordValues(2, 1))
 	require.NoError(t, h.RecordValues(1, 1))
 
@@ -148,37 +150,37 @@ func TestHDRHistogramExportReturnsNewCopy(t *testing.T) {
 }
 
 func TestRollingHDRHistogramExportReturnsNewCopy(t *testing.T) {
-	origTime := time.Now()
+	origTime := clock.Now()
+
+	done := testutils.FreezeTime()
+	defer done()
 
 	a := RollingHDRHistogram{
 		idx:         1,
 		lastRoll:    origTime,
-		period:      2 * time.Second,
+		period:      2 * clock.Second,
 		bucketCount: 3,
 		low:         4,
 		high:        5,
 		sigfigs:     1,
 		buckets:     []*HDRHistogram{},
-		clock:       testutils.GetClock(),
 	}
 
 	b := a.Export()
 	a.idx = 11
-	a.lastRoll = time.Now().Add(1 * time.Minute)
-	a.period = 12 * time.Second
+	a.lastRoll = clock.Now().Add(1 * clock.Minute)
+	a.period = 12 * clock.Second
 	a.bucketCount = 13
 	a.low = 14
 	a.high = 15
 	a.sigfigs = 1
 	a.buckets = nil
-	a.clock = nil
 
 	assert.Equal(t, 1, b.idx)
 	assert.Equal(t, origTime, b.lastRoll)
-	assert.Equal(t, 2*time.Second, b.period)
+	assert.Equal(t, 2*clock.Second, b.period)
 	assert.Equal(t, 3, b.bucketCount)
 	assert.Equal(t, int64(4), b.low)
 	assert.EqualValues(t, 5, b.high)
 	assert.NotNil(t, b.buckets)
-	assert.NotNil(t, b.clock)
 }

@@ -9,7 +9,7 @@ TXT_FILES := $(shell find * -type f -not -path 'vendor/**')
 default: clean misspell vet check-fmt test
 
 test: clean
-	go test -race -cover $(PKGS)
+	go test -race -cover -count 1 $(PKGS)
 
 test-verbose: clean
 	go test -v -race -cover $(PKGS)

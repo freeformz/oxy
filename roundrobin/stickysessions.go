@@ -3,8 +3,8 @@ package roundrobin
 import (
 	"net/http"
 	"net/url"
-	"time"
 
+	"github.com/mailgun/holster/v4/clock"
 	"github.com/vulcand/oxy/roundrobin/stickycookie"
 )
 
@@ -15,7 +15,7 @@ type CookieOptions struct {
 
 	Path    string
 	Domain  string
-	Expires time.Time
+	Expires clock.Time
 
 	MaxAge   int
 	SameSite http.SameSite
